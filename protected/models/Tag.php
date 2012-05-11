@@ -81,7 +81,7 @@ class Tag extends CActiveRecord {
                     'criteria' => $criteria,
                 ));
     }
-    
+
     /**
      * Create tag
      * @param string $names
@@ -89,15 +89,65 @@ class Tag extends CActiveRecord {
     public function createTags($names) {
         $arrName = explode(',', $names);
         foreach ($arrName as $name) {
-            $tag = $this->findByAttributes(array('name'=>$name));
+            $tag = $this->findByAttributes(array('name' => $name));
             if (is_null($tag)) {
                 $tag = new Tag;
                 $tag->name = $name;
                 $tag->frequency = 1;
-            }else {
+            } else {
                 $tag->frequency++;
             }
             $tag->save();
+        }
+    }
+    
+    /**
+     * Delete tag
+     * @param string $names 
+     */
+    public function deleteTags($names) {
+        $arrName = explode(',', $names);
+        foreach ($arrName as $name) {
+            $tag = $this->findByAttributes(array('name'=>$name));
+            if ($tag->frequency == 1)
+                $tag->delete();
+            else {
+                $tag->frequency--;
+                $tag->update(array('frequency'));
+            }
+        }        
+    }
+    
+    /**
+     * Update tag
+     * @param string $names 
+     */
+    public function updateTags($old, $new) {        
+        $lengthOld = strlen($old);
+        $lengthNew = strlen($new);
+        
+        if ($lengthOld == $lengthNew)
+            return;    
+        
+        if ($lengthNew == 0) {
+            $this->deleteTags($old);
+            return;
+        }
+        
+        if ($lengthOld == 0 && $lengthNew > 0) {
+            $this->createTags($new);
+            return;
+        }
+
+        $arrOld = explode(',', $old);
+        $arrNew = explode(',', $new);        
+        if ($lengthNew > $lengthOld) {
+            $this->createTags(implode(',', array_diff($arrNew, $arrOld)));
+            return;
+        }
+        if ($lengthNew < $lengthOld) {
+            $this->deleteTags(implode(',', array_diff($arrOld, $arrNew)));
+            return;            
         }
     }
 

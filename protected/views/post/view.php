@@ -1,6 +1,5 @@
 <?php
 $this->breadcrumbs=array(
-	'Posts'=>array('index'),
 	$model->title,
 );
 

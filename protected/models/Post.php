@@ -48,7 +48,8 @@ class Post extends CActiveRecord {
         return array(
             array('title, content', 'required'),
             array('title, tags', 'length', 'max' => 256),
-            array('title, status', 'safe', 'on' => 'search'),
+            array('status', 'safe'),
+            array('title, status, create_time', 'safe', 'on' => 'search'),
         );
     }
 
@@ -85,20 +86,17 @@ class Post extends CActiveRecord {
      * @return CActiveDataProvider the data provider that can return the models based on the search/filter conditions.
      */
     public function search() {
-        // Warning: Please modify the following code to remove attributes that
-        // should not be searched.
-
         $criteria = new CDbCriteria;
-
-        $criteria->compare('id', $this->id);
+        
+        if($this->create_time)
+        {				
+            $criteria->addCondition('DATE_FORMAT(FROM_UNIXTIME(create_time), "%b %Y") LIKE :time');
+            $criteria->params = array(':time'=>$this->create_time);		
+        }        
+        
         $criteria->compare('title', $this->title, true);
-        $criteria->compare('content', $this->content, true);
         $criteria->compare('status', $this->status);
-        $criteria->compare('tags', $this->tags, true);
-        $criteria->compare('create_time', $this->create_time);
-        $criteria->compare('update_time', $this->update_time);
-        $criteria->compare('user_id', $this->user_id);
-
+        
         return new CActiveDataProvider($this, array(
                     'criteria' => $criteria,
                 ));
@@ -143,6 +141,25 @@ class Post extends CActiveRecord {
      */
     protected function afterSave() {
         parent::afterSave();
-        Tag::model()->createTags($this->tags);
+        if ($this->getIsNewRecord())
+            Tag::model()->createTags($this->tags);
     }
+    
+    public function showCreateTime() {
+        return date('M d, Y', $this->create_time);
+    }
+    
+    public function getCreateTimeArray() {
+        $posts = $this->findAll(array(
+            'select' => 'create_time',
+        ));
+        
+        $arr = array();
+        foreach ($posts as $p) {
+            $month = date('M Y', $p->create_time);
+            $arr[$month] = $month;
+        }
+        
+        return array_unique($arr);
+    }    
 }
