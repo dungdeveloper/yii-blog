@@ -27,3 +27,18 @@ $this->menu=array(
 		'user_id',
 	),
 )); ?>
+
+<!-- Comments -->
+<h1>Comments</h1>
+<?php $this->widget('zii.widgets.CListView', array(
+	'dataProvider'=>$dataProvider,
+	'itemView'=>'../comment/_view',
+)); ?>
+
+<?php
+$user = Yii::app()->user;
+if ($user->hasFlash('comment')) {
+    echo $user->getFlash('comment');
+}
+?>
+<?php $this->renderPartial('../comment/_form', array('model'=>$modelComment));?>

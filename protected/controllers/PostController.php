@@ -47,9 +47,33 @@ class PostController extends Controller {
      * @param integer $id the ID of the model to be displayed
      */
     public function actionView($id) {
+        // create comment
+        $modelComment = new Comment;
+        $this->createComment($modelComment, $id);
+        
+        // list comments
+        $dataProvider = new CActiveDataProvider('Comment', array(
+            'criteria' => array(
+                'condition' => 'status='.Comment::STATUS_ACCEPTED,                
+            ),
+        ));
+        
         $this->render('view', array(
             'model' => $this->loadModel($id),
+            'modelComment' => $modelComment,
+            'dataProvider' => $dataProvider,
         ));
+    }
+    
+    protected function createComment($model, $post_id) {
+        if (isset($_POST['Comment'])) {
+            $model->attributes = $_POST['Comment'];
+            $model->post_id = $post_id;
+            if ($model->validate() && $model->save()) {
+                Yii::app()->user->setFlash('comment', 'Your comment has been sent. Thank you!');
+                $this->refresh();
+            }
+        }
     }
 
     /**

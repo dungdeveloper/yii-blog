@@ -17,6 +17,11 @@
  * @property Post $post
  */
 class Comment extends CActiveRecord {
+    
+    const STATUS_PENDING = 1;
+    const STATUS_ACCEPTED = 2;
+    
+    public $post_title;
 
     /**
      * Returns the static model of the specified AR class.
@@ -38,15 +43,13 @@ class Comment extends CActiveRecord {
      * @return array validation rules for model attributes.
      */
     public function rules() {
-        // NOTE: you should only define rules for those attributes that
-        // will receive user inputs.
         return array(
-            array('author_name, author_email, content, post_id', 'required'),
-            array('status, create_time, post_id', 'numerical', 'integerOnly' => true),
+            array('author_name, author_email, content', 'required'),            
             array('author_name, author_email, author_url', 'length', 'max' => 256),
-            // The following rule is used by search().
-            // Please remove those attributes that should not be searched.
-            array('id, author_name, author_email, author_url, content, status, create_time, post_id', 'safe', 'on' => 'search'),
+            array('author_email', 'email'),
+            array('author_url', 'url'),
+            array('status', 'safe'),
+            array('create_time, post_title', 'safe', 'on'=>'search'),
         );
     }
 
@@ -54,8 +57,6 @@ class Comment extends CActiveRecord {
      * @return array relational rules.
      */
     public function relations() {
-        // NOTE: you may need to adjust the relation name and the related
-        // class name for the relations automatically generated below.
         return array(
             'post' => array(self::BELONGS_TO, 'Post', 'post_id'),
         );
@@ -67,13 +68,13 @@ class Comment extends CActiveRecord {
     public function attributeLabels() {
         return array(
             'id' => 'ID',
-            'author_name' => 'Author Name',
-            'author_email' => 'Author Email',
-            'author_url' => 'Author Url',
-            'content' => 'Content',
+            'author_name' => 'Name',
+            'author_email' => 'Email',
+            'author_url' => 'Website',
+            'content' => 'Comment',
             'status' => 'Status',
             'create_time' => 'Create Time',
-            'post_id' => 'Post',
+            'post_title' => 'Post',            
         );
     }
 
@@ -82,23 +83,79 @@ class Comment extends CActiveRecord {
      * @return CActiveDataProvider the data provider that can return the models based on the search/filter conditions.
      */
     public function search() {
-        // Warning: Please modify the following code to remove attributes that
-        // should not be searched.
-
         $criteria = new CDbCriteria;
-
-        $criteria->compare('id', $this->id);
+        if ($this->post_title) {
+            $criteria->addCondition('post_id IN (SELECT id FROM blog_post WHERE title LIKE :title)');
+            $criteria->params = array(':title'=>'%'.$this->post_title.'%');
+        }
+        
         $criteria->compare('author_name', $this->author_name, true);
         $criteria->compare('author_email', $this->author_email, true);
         $criteria->compare('author_url', $this->author_url, true);
-        $criteria->compare('content', $this->content, true);
-        $criteria->compare('status', $this->status);
-        $criteria->compare('create_time', $this->create_time);
-        $criteria->compare('post_id', $this->post_id);
+        $criteria->compare('t.content', $this->content, true);
+        $criteria->compare('t.status', $this->status);
+        $criteria->compare('DATE_FORMAT(FROM_UNIXTIME(t.create_time), "%b %Y")', $this->create_time);
 
         return new CActiveDataProvider($this, array(
                     'criteria' => $criteria,
                 ));
     }
-
+    
+    protected function beforeSave() {
+        if (parent::beforeSave()) {
+            if ($this->getIsNewRecord()) {
+                $this->create_time = time();
+                $this->status = self::STATUS_PENDING;
+            }
+            return TRUE;
+        }
+        return FALSE;
+    }
+    
+    /**
+     * Get array of status 
+     */
+    public function getStatusArray() {
+        return array(
+            self::STATUS_PENDING => 'Pending',
+            self::STATUS_ACCEPTED => 'Accepted',
+        );
+    }
+    
+    /**
+     * Get status name 
+     */
+    public function getStatusName() {
+        $arrStatus = $this->getStatusArray();
+        return $arrStatus[$this->status];
+    }
+    
+    /**
+     * Show create time
+     */
+    public function showCreateTime() {
+        return date('M d, Y', $this->create_time);
+    }
+    
+    /**
+     * Get create time array 
+     */
+    public function getCreateTimeArray() {
+        $comments = $this->findAll(array(
+            'select' => 'create_time',
+        ));
+        $arr = array();
+        foreach ($comments as $c) {
+            $t = date('M Y', $c->create_time);
+            $arr[$t] = $t;
+        }        
+        return array_unique($arr);
+    }
+    
+    /**
+     * Get post link 
+     */
+    public function getPostLink() {
+        return CHtml::link($this->post->title, array('post/view', 'id'=>$this->post_id));
+    }
 }
