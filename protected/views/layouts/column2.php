@@ -8,7 +8,7 @@
 	<div id="sidebar">
 	<?php
 		$this->beginWidget('zii.widgets.CPortlet', array(
-			'title'=>'Operations',
+			'title'=>'Hello '.Yii::app()->user->name,
 		));
 		$this->widget('zii.widgets.CMenu', array(
 			'items'=>$this->menu,
@@ -16,6 +16,8 @@
 		));
 		$this->endWidget();
 	?>
+    <?php $this->widget('TagCloud'); ?>
+    <?php $this->widget('RecentComment'); ?>
 	</div><!-- sidebar -->
 </div>
 <?php $this->endContent(); ?>

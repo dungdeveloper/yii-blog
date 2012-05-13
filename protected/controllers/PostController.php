@@ -143,9 +143,14 @@ class PostController extends Controller {
      * Lists all models.
      */
     public function actionIndex() {
+        $condition = 'status='.Post::STATUS_PUBLISHED;
+        if (isset($_GET['tag'])) {
+            $condition .= ' AND tags LIKE "%'.$_GET['tag'].'%"';
+        }
+        
         $dataProvider = new CActiveDataProvider('Post', array(
             'criteria' => array(
-                'condition' => 'status='.Post::STATUS_PUBLISHED,
+                'condition' => $condition,
                 'order' => 'create_time DESC',
             ),
         ));

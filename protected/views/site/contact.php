@@ -1,3 +1,7 @@
+<?php
+$this->breadcrumbs = array('Contact');
+?>
+
 <h1>Contact</h1>
 
 <?php
